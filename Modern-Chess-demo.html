@@ -1,0 +1,715 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>モダンチェス</title>
+<style>
+:root{--bg:#f6f7f9;--card:#ffffff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--light:#fefdf6;--dark:#8fa8a0;--last:#fde68a;--check:#fecaca}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-system,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+main{max-width:540px;margin:auto;padding:14px 12px 28px}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:6px 2px 10px}
+h1{font-size:24px;font-weight:900;letter-spacing:-0.03em;margin:0;display:flex;align-items:center;gap:10px}
+h1 span.dot{width:10px;height:10px;border-radius:50%;background:var(--ink);display:inline-block}
+h1 small{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--muted);background:white;border:1px solid var(--line);padding:4px 8px;border-radius:999px}
+h2{font-size:18px;font-weight:800;margin:0 0 8px;letter-spacing:-.02em}
+p{margin:8px 0;line-height:1.75}
+button{font:inherit;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:12px 16px;cursor:pointer;min-height:46px;font-weight:700;transition:transform .08s,background .15s;user-select:none}
+button:active{transform:scale(.98)}
+button:disabled{opacity:.45;cursor:default;transform:none}
+button.primary{background:var(--ink);color:white;border-color:var(--ink);box-shadow:0 8px 18px rgba(15,23,42,.18)}
+button.ghost{background:transparent}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.menu button{display:block;width:100%;margin:10px 0;padding:18px 16px;text-align:left}
+.menu button b{display:block;font-size:16px}
+.menu button span{font-size:13px;color:var(--muted);font-weight:500}
+.sub{color:var(--muted);font-size:12.5px;line-height:1.7;white-space:pre-line}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px;margin:14px 0;box-shadow:0 10px 30px rgba(15,23,42,.05)}
+.status{background:var(--ink);color:white;border-radius:16px;padding:14px 16px;line-height:1.6;font-weight:700;min-height:54px;display:flex;align-items:center;gap:10px}
+.status .turndot{width:10px;height:10px;border-radius:50%;background:white;flex-shrink:0}
+.label{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--muted);margin:12px 2px 6px;text-transform:uppercase;display:flex;justify-content:space-between}
+.board-wrap{position:relative;border-radius:20px;padding:8px;background:var(--card);border:1px solid var(--line);box-shadow:0 18px 50px rgba(15,23,42,.12)}
+.board{display:grid;grid-template-columns:repeat(8,1fr);border:3px solid var(--ink);border-radius:14px;overflow:hidden;background:var(--ink);aspect-ratio:1;margin:0}
+.cell{position:relative;display:flex;align-items:center;justify-content:center;border:0;padding:0;background:transparent;aspect-ratio:1;font-size:clamp(22px,6.8vw,36px);font-weight:900;cursor:pointer}
+.cell.light{background:var(--light)}
+.cell.dark{background:var(--dark)}
+.cell.last.light{background:linear-gradient(0deg,var(--last),var(--last)),var(--light)}
+.cell.last.dark{background:linear-gradient(0deg,var(--last),var(--last)),var(--dark)}
+.cell.sel{box-shadow:inset 0 0 0 3px var(--ink);z-index:2}
+.cell.in-check.light{background:var(--check)!important}
+.cell.in-check.dark{background:#fca5a5!important}
+.cell.dest::after{content:'';position:absolute;width:28%;height:28%;border-radius:50%;background:var(--ink);opacity:.22;pointer-events:none}
+.cell.dest.has-piece::after{width:86%;height:86%;border-radius:12px;background:transparent;border:3.5px solid var(--ink);opacity:.42}
+.piece{line-height:1;display:inline-flex;align-items:center;justify-content:center;width:100%;height:100%;user-select:none;pointer-events:none}
+.piece.white{color:#fff;-webkit-text-stroke:1.45px var(--ink);text-shadow:0 1px 0 rgba(15,23,42,.25)}
+.piece.black{color:var(--ink)}
+.piece.moved{animation:pop .18s ease-out}
+@keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+.coords{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--muted);margin:6px 4px 0}
+.captured{display:flex;gap:6px;flex-wrap:wrap;min-height:30px;align-items:center;padding:4px 2px}
+.captured span{font-size:18px;line-height:1;background:white;border:1px solid var(--line);border-radius:8px;padding:3px 6px}
+#log{max-height:160px;overflow:auto;font-family:ui-monospace,monospace;font-size:12px;line-height:1.9;background:#0f172a;color:#e2e8f0;border-radius:12px;padding:12px;white-space:pre-wrap}
+dialog{max-width:360px;width:92%;border:0;border-radius:20px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);background:white;color:var(--ink)}
+dialog::backdrop{background:rgba(15,23,42,.45);backdrop-filter:blur(6px)}
+.promo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0}
+.promo-grid button{font-size:28px;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+details{margin:18px 0;background:white;border:1px solid var(--line);border-radius:16px;padding:12px 16px}
+summary{cursor:pointer;font-weight:800;font-size:13px}
+footer{margin-top:22px;text-align:center;color:var(--muted);font-size:11px}
+
+/* One consistent vector set; generous sizing without clipping on small boards. */
+.piece.white{--piece-fill:#fffdf7;--piece-stroke:#172334;--detail:#172334;-webkit-text-stroke:0;text-shadow:none}
+.piece.black{--piece-fill:#172334;--piece-stroke:#f5f2e8;--detail:#fffdf7}
+.piece svg{display:block;width:100%;height:100%;overflow:visible}
+.cell .piece{width:96%;height:96%}
+.cell{min-height:0;border-radius:0}
+.captured span.piece{width:32px;height:34px;padding:2px;flex:0 0 32px}
+.promo-grid .piece{width:54px;height:54px;max-width:100%}
+.sound-control{display:flex;justify-content:flex-end;margin:4px 0}.sound-control button{min-height:36px;padding:6px 12px;font-size:12px}
+</style>
+<script src="webxdc.js"></script>
+</head><body><main>
+<header><h1><span class="dot"></span> CHESS <small id="mode">webxdc</small></h1><button id="back" hidden class="ghost">‹ メニュー</button></header>
+<div id="notice" class="sub"></div>
+<div class="sound-control"><button id="soundToggle" type="button" aria-pressed="true">効果音：オン</button></div>
+<div id="menu" class="menu">
+<div class="card">
+<h2>モダンチェス — ひとりでも、チャットでも</h2>
+<p>駒をタップ → 行ける場所が黒ドットで表示。もう一度タップで移動。ポーンが最後まで行くと昇格を選べます。</p>
+<button class="primary" id="cpuWhite"><b>CPUと対戦（あなたが白）</b><span>先手。モダンなCPUが応じます</span></button>
+<button id="cpuBlack"><b>CPUと対戦（あなたが黒）</b><span>後手から。反転した盤面で開始</span></button>
+<button class="primary" id="onlineBtn"><b>チャット相手と対戦</b><span>同じwebxdc投稿を2人が開くと始まります</span></button>
+</div>
+<p class="sub">白が先手。キャスリング、アンパッサン、昇格に対応。チェックは自動で防ぎ、詰み・ステイルメイト・50手・3回同形を判定。オンラインは履歴から復元。観戦OK。</p>
+</div>
+<div id="game" hidden>
+<div class="status" id="status"><span class="turndot"></span><span id="statusText"></span></div>
+<div class="label"><span id="topLabel"></span><span id="topMat"></span></div>
+<div class="captured" id="topCapt"></div>
+<div class="board-wrap"><div id="board" class="board" role="group" aria-label="チェス盤 8×8"></div></div>
+<div class="coords" id="coordsX"></div>
+<div class="label"><span id="bottomLabel"></span><span id="bottomMat"></span></div>
+<div class="captured" id="bottomCapt"></div>
+<p id="hint" class="sub">自分の駒を選ぶ → 黒い印のマスへ。キャスリングはキングを2マス動かします。</p>
+<div class="actions" id="actions"></div>
+<div id="rx" class="sub"></div>
+<details><summary>棋譜とログ</summary><div id="log"></div></details>
+</div>
+<details><summary>ルールと仕様</summary>
+<p><b>操作:</b> 自分の駒をタップ → 行先をタップ。選び直しは同じ駒を再タップ。</p>
+<p><b>特殊:</b> キャスリング、アンパッサン、プロモーション Q/R/B/N。</p>
+<p><b>終局:</b> チェックメイト、ステイルメイト、50手、駒不足、3回同形、合意ドロー、投了。</p>
+<p><b>オンライン:</b> 将棋版と同じ論理クロック＋送信者ID＋イベントIDで競合解決。</p>
+<p class="sub">Chess webxdc 1.0.4 / 外部ライブラリ不要 / single file</p>
+</details>
+<footer>Delta Chat webxdc • modern pieces</footer>
+</main>
+<dialog id="promoDialog"><h2>昇格する駒を選んでください</h2><p class="sub">ポーンは最後の段で別の駒になります。</p><div class="promo-grid" id="promoGrid"></div><div class="actions"><button id="cancelPromo" class="ghost">選び直す</button></div></dialog>
+<script>
+'use strict';
+/* Chess engine */
+const Chess = (() => {
+  const types=['K','Q','R','B','N','P'];
+  const values={K:20000,Q:900,R:500,B:330,N:320,P:100};
+  const clone=s=>JSON.parse(JSON.stringify(s));
+  const inside=(r,c)=>r>=0&&r<8&&c>=0&&c<8;
+  const opp=p=>3-p;
+  function initial(){
+    let b=Array.from({length:8},()=>Array(8).fill(null));
+    const back=['R','N','B','Q','K','B','N','R'];
+    back.forEach((t,c)=>{b[0][c]={t,p:2}; b[7][c]={t,p:1};});
+    for(let c=0;c<8;c++){b[1][c]={t:'P',p:2}; b[6][c]={t:'P',p:1};}
+    return {b,turn:1,castle:{1:{K:true,Q:true},2:{K:true,Q:true}},ep:null,half:0,ply:0,over:false,result:'',last:null,history:[]};
+  }
+  function key(s){
+    // An en-passant target distinguishes positions only if the capture is legal.
+    const ep=s.ep && genPseudo(s).some(m=>m.ep&&valid(s,m)) ? s.ep : null;
+    return JSON.stringify([s.b,s.castle,ep,s.turn]);
+  }
+  function findKing(b,p){
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c]?.t==='K'&&b[r][c]?.p===p)return [r,c];
+    return null;
+  }
+  function attacked(s,r,c,by){
+    const b=s.b;
+    const pr = r + (by===1 ? 1 : -1);
+    for(let dc of [-1,1]){let cc=c+dc; if(inside(pr,cc)){let q=b[pr][cc]; if(q?.p===by&&q.t==='P') return true;}}
+    const km=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+    for(let [dr,dc] of km){let rr=r+dr,cc=c+dc; if(inside(rr,cc)){let q=b[rr][cc]; if(q?.p===by&&q.t==='N') return true;}}
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)if(dr||dc){let rr=r+dr,cc=c+dc; if(inside(rr,cc)){let q=b[rr][cc]; if(q?.p===by&&q.t==='K') return true;}}
+    const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+    for(let [dr,dc] of dirs){
+      let rr=r+dr,cc=c+dc;
+      while(inside(rr,cc)){
+        let q=b[rr][cc];
+        if(q){
+          if(q.p===by){
+            if(dr===0||dc===0){ if(['R','Q'].includes(q.t)) return true; }
+            else { if(['B','Q'].includes(q.t)) return true; }
+          }
+          break;
+        }
+        rr+=dr; cc+=dc;
+      }
+    }
+    return false;
+  }
+  function inCheck(s,p){
+    const kp=findKing(s.b,p);
+    if(!kp) return true;
+    return attacked(s,kp[0],kp[1],opp(p));
+  }
+  function genPseudo(s){
+    const b=s.b; const p=s.turn; const out=[];
+    const forward = p===1 ? -1 : 1;
+    const startRow = p===1 ? 6 : 1;
+    const promoRow = p===1 ? 0 : 7;
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+      let q=b[r][c]; if(!q||q.p!==p) continue;
+      if(q.t==='P'){
+        let nr=r+forward;
+        if(inside(nr,c)&&!b[nr][c]){
+          if(nr===promoRow){
+            for(let pt of ['Q','R','B','N']) out.push({fr:r,fc:c,r:nr,c:c,promote:pt});
+          }else{
+            out.push({fr:r,fc:c,r:nr,c:c});
+            if(r===startRow){
+              let nr2=r+forward*2;
+              if(inside(nr2,c)&&!b[nr2][c]) out.push({fr:r,fc:c,r:nr2,c:c,epTarget:[nr,c]});
+            }
+          }
+        }
+        for(let dc of [-1,1]){
+          let cc=c+dc, rr=r+forward;
+          if(!inside(rr,cc)) continue;
+          let target=b[rr][cc];
+          let isEp = s.ep && s.ep[0]===rr && s.ep[1]===cc;
+          if(target?.p===opp(p) || isEp){
+            if(rr===promoRow){
+              for(let pt of ['Q','R','B','N']) out.push({fr:r,fc:c,r:rr,c:cc,promote:pt,ep:isEp});
+            }else{
+              out.push({fr:r,fc:c,r:rr,c:cc,ep:isEp});
+            }
+          }
+        }
+      }else if(q.t==='N'){
+        for(let [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){
+          let rr=r+dr,cc=c+dc; if(!inside(rr,cc)) continue; let t=b[rr][cc]; if(!t||t.p!==p) out.push({fr:r,fc:c,r:rr,c:cc});
+        }
+      }else if(q.t==='B' || q.t==='R' || q.t==='Q'){
+        let dirs=[];
+        if(q.t==='B'||q.t==='Q') dirs.push(...[[1,1],[1,-1],[-1,1],[-1,-1]]);
+        if(q.t==='R'||q.t==='Q') dirs.push(...[[1,0],[-1,0],[0,1],[0,-1]]);
+        for(let [dr,dc] of dirs){
+          let rr=r+dr,cc=c+dc;
+          while(inside(rr,cc)){
+            let t=b[rr][cc];
+            if(!t) out.push({fr:r,fc:c,r:rr,c:cc});
+            else { if(t.p!==p) out.push({fr:r,fc:c,r:rr,c:cc}); break; }
+            rr+=dr; cc+=dc;
+          }
+        }
+      }
+      if(q.t==='K'){
+        for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)if(dr||dc){
+          let rr=r+dr,cc=c+dc; if(!inside(rr,cc)) continue; let t=b[rr][cc]; if(!t||t.p!==p) out.push({fr:r,fc:c,r:rr,c:cc});
+        }
+        if(!inCheck(s,p)){
+          const cr = p===1?7:0;
+          if(r===cr && c===4){
+            if(s.castle[p]?.K && !b[cr][5] && !b[cr][6] && b[cr][7]?.t==='R' && b[cr][7]?.p===p){
+              if(!attacked(s,cr,5,opp(p)) && !attacked(s,cr,6,opp(p))){
+                out.push({fr:r,fc:c,r:cr,c:6,castle:'K'});
+              }
+            }
+            if(s.castle[p]?.Q && !b[cr][1] && !b[cr][2] && !b[cr][3] && b[cr][0]?.t==='R' && b[cr][0]?.p===p){
+              if(!attacked(s,cr,2,opp(p)) && !attacked(s,cr,3,opp(p))){
+                out.push({fr:r,fc:c,r:cr,c:2,castle:'Q'});
+              }
+            }
+          }
+        }
+      }
+    }
+    return out;
+  }
+  function raw(s,m){
+    let n=clone(s);
+    let b=n.b; let p=s.turn;
+    let moving=b[m.fr][m.fc];
+    if(!moving) return null;
+    let captured=null;
+    if(m.ep){
+      let capR = m.fr; let capC = m.c;
+      captured=b[capR][capC];
+      b[capR][capC]=null;
+    }else{
+      captured=b[m.r][m.c];
+    }
+    b[m.fr][m.fc]=null;
+    let newT = m.promote ? m.promote : moving.t;
+    b[m.r][m.c]={t:newT,p};
+    if(m.castle){
+      let cr = p===1?7:0;
+      if(m.castle==='K'){ b[cr][5]=b[cr][7]; b[cr][7]=null; }
+      else { b[cr][3]=b[cr][0]; b[cr][0]=null; }
+    }
+    if(moving.t==='K'){ n.castle[p]={K:false,Q:false}; }
+    if(m.fr=== (p===1?7:0)){
+      if(m.fc===0) n.castle[p].Q=false;
+      if(m.fc===7) n.castle[p].K=false;
+    }
+    if(captured?.t==='R' && m.r=== (opp(p)===1?7:0)){
+      if(m.c===0) n.castle[opp(p)].Q=false;
+      if(m.c===7) n.castle[opp(p)].K=false;
+    }
+    if(m.epTarget) n.ep=m.epTarget; else n.ep=null;
+    if(moving.t==='P' || captured || m.ep) n.half=0; else n.half=s.half+1;
+    n.turn=opp(p);
+    n.ply=s.ply+1;
+    n.last={...m, captured: captured?captured.t:null};
+    return n;
+  }
+  function valid(s,m){
+    let n=raw(s,m);
+    if(!n) return false;
+    return !inCheck(n,s.turn);
+  }
+  function moves(s){
+    if(s.over) return [];
+    return genPseudo(s).filter(m=>s.b[m.r][m.c]?.t!=='K'&&valid(s,m));
+  }
+  function insufficient(s){
+    let pieces=[];
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(s.b[r][c]) pieces.push(s.b[r][c]);
+    if(pieces.length===2) return true;
+    if(pieces.length===3){
+      if(pieces.some(q=>['B','N'].includes(q.t))) return true;
+    }
+    if(pieces.length===4){
+      let bishops=[];
+      for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(s.b[r][c]?.t==='B') bishops.push((r+c)%2);
+      if(bishops.length===2 && bishops[0]===bishops[1]) return true;
+    }
+    return false;
+  }
+  function play(s,m){
+    if(!m||!Number.isInteger(m.r)||!Number.isInteger(m.c)) return null;
+    if(s.over) return null;
+    let chosen=null;
+    for(let cand of genPseudo(s)){
+      if(cand.fr===m.fr && cand.fc===m.fc && cand.r===m.r && cand.c===m.c && (cand.promote||null)===(m.promote||null) && (cand.castle||null)===(m.castle||null) && !!cand.ep===!!m.ep){
+        chosen=cand; break;
+      }
+      if(!m.promote && !cand.promote && cand.fr===m.fr&&cand.fc===m.fc&&cand.r===m.r&&cand.c===m.c&& (cand.castle||null)===(m.castle||null)){
+        chosen=cand; break;
+      }
+    }
+    if(!chosen) return null;
+    if(s.b[chosen.r][chosen.c]?.t==='K'||!valid(s,chosen)) return null;
+    let n=raw(s,chosen);
+    let chk=inCheck(n,n.turn);
+    n.history=[...s.history,{key:key(n),mover:s.turn,check:chk}];
+    let ms=moves(n);
+    if(ms.length===0){
+      n.over=true;
+      n.result=chk ? `${s.turn===1?'白':'黒'}の勝ち（チェックメイト）` : '引き分け（ステイルメイト）';
+    }else if(n.half>=100){
+      n.over=true; n.result='引き分け（50手ルール）';
+    }else if(insufficient(n)){
+      n.over=true; n.result='引き分け（駒不足）';
+    }else{
+      let count=key(s.ply===0?s:initial())===key(n)?1:0;
+      for(let h of n.history) if(h.key===key(n)) count++;
+      if(count>=3){ n.over=true; n.result='引き分け（3回同形）'; }
+    }
+    return n;
+  }
+  const pst={
+    P:[0,0,0,0,0,0,0,0, 50,50,50,50,50,50,50,50, 10,10,20,30,30,20,10,10, 5,5,10,25,25,10,5,5, 0,0,0,20,20,0,0,0, 5,-5,-10,0,0,-10,-5,5, 5,10,10,-20,-20,10,10,5, 0,0,0,0,0,0,0,0],
+    N:[-50,-40,-30,-30,-30,-40,-50,-50, -40,-20,0,0,0,-20,-40,-40, -30,0,10,15,15,10,0,-30, -30,5,15,20,20,15,5,-30, -30,0,15,20,20,15,0,-30, -30,5,10,15,15,10,5,-30, -40,-20,0,5,5,0,-20,-40, -50,-40,-30,-30,-30,-40,-50,-50],
+    B:[-20,-10,-10,-10,-10,-10,-20,-20, -10,0,0,0,0,0,-10,-10, -10,0,10,10,10,10,0,-10, -10,5,5,10,12,5,5,-10, -10,0,5,10,10,5,0,-10, -10,10,10,10,10,10,-10,-10, -10,5,0,0,0,0,5,-10, -20,-10,-10,-10,-10,-10,-20,-20],
+    R:[0,0,0,0,0,0,0,0, 5,10,10,10,10,10,10,5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, 0,0,0,5,5,0,0,0],
+    Q:[-20,-10,-10,-5,-5,-10,-10,-20, -10,0,0,0,0,0,0,-10, -10,0,5,5,5,5,0,-10, -5,0,5,5,5,5,0,-5, 0,0,5,5,5,5,0,-5, -10,5,5,5,5,5,0,-10, -10,0,5,0,0,0,0,-10, -20,-10,-10,-5,-5,-10,-10,-20],
+    K:[-30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -20,-30,-30,-40,-40,-30,-30,-20, -10,-20,-20,-20,-20,-20,-20,-10, 20,20,0,0,0,0,20,20, 20,30,10,0,0,10,30,20]
+  };
+  function evaluate(s,p){
+    let score=0;
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+      let q=s.b[r][c]; if(!q) continue;
+      let v=values[q.t];
+      let idx = q.p===1 ? r*8 + c : (7-r)*8 + c;
+      let pv = pst[q.t] ? pst[q.t][idx] : 0;
+      if(q.p===p) score+= v+pv; else score-= v+pv;
+    }
+    return score;
+  }
+  function cpu(s){
+    const p=s.turn; let ms=moves(s);
+    if(!ms.length) return null;
+    ms.sort((a,b)=>{let ca=s.b[a.r][a.c]?1:0; let cb=s.b[b.r][b.c]?1:0; return cb-ca;});
+    let best=null, bestScore=-Infinity;
+    const ranked=ms.map(m=>{let n=raw(s,m); return {m,n,v:evaluate(n,p)};}).sort((a,b)=>b.v-a.v);
+    for(let x of ranked){
+      let replies=moves(x.n);
+      let v=x.v;
+      if(!replies.length){
+        if(inCheck(x.n,opp(p))) v=1e7; else v=0;
+      }else{
+        let worst=Infinity;
+        for(let r of replies){
+          let nn=raw(x.n,r);
+          let ev=evaluate(nn,p);
+          if(ev<worst) worst=ev;
+        }
+        v=worst;
+      }
+      if(v>bestScore){bestScore=v; best=x.m;}
+    }
+    return best;
+  }
+  return {initial,clone,key,attacked,inCheck,moves,play,cpu,raw,types,values,findKing};
+})();
+
+const Sync=(()=>{
+ const participant=(g,a)=>g?([1,2].find(p=>g.players[p]?.addr===a)||0):0;
+ function reduce(events){
+  let g=null;
+  const sorted=[...events].filter(e=>e&&typeof e==='object').sort((a,b)=>a.clock-b.clock||(a.addr<b.addr?-1:a.addr>b.addr?1:0)||(a.eid<b.eid?-1:a.eid>b.eid?1:0));
+  for(const e of sorted){
+    if(!e||e.v!==1||!Number.isSafeInteger(e.clock)||e.clock<1||typeof e.addr!=='string'||!e.addr||typeof e.eid!=='string'||!e.eid||typeof e.id!=='string'||!e.id) continue;
+    const user={addr:e.addr,name:typeof e.name==='string'?e.name.slice(0,40):'プレイヤー'};
+    if(e.type==='NEW'&&(e.side===1||e.side===2)){
+      if(g?.status==='playing') continue;
+      if(g?.status==='waiting'){ if(participant(g,e.addr)) continue; g.players[3-g.hostSide]=user; g.status='playing'; continue; }
+      g={id:e.id,hostSide:e.side,players:[null,null,null],status:'waiting',st:Chess.initial(),offers:[]}; g.players[e.side]=user; continue;
+    }
+    if(!g) continue;
+    if(e.type==='REMATCH'){ if(e.previous!==g.id||g.status!=='over'||!participant(g,e.addr)||!g.players[1]||!g.players[2]) continue; g={id:e.id,hostSide:3-g.hostSide,players:[null,g.players[2],g.players[1]],status:'playing',st:Chess.initial(),offers:[]}; continue; }
+    if(e.id!==g.id) continue; const me=participant(g,e.addr);
+    if(e.type==='JOIN'&&g.status==='waiting'&&!me){ g.players[3-g.hostSide]=user; g.status='playing'; }
+    else if(e.type==='CANCEL'&&g.status==='waiting'&&me===g.hostSide) g=null;
+    else if(e.type==='MOVE'&&g.status==='playing'&&me===g.st.turn&&e.before===Chess.key(g.st)&&e.ply===g.st.ply){ const n=Chess.play(g.st,e.move); if(n){ g.st=n; g.offers=[]; if(n.over) g.status='over'; } }
+    else if(e.type==='RESIGN'&&g.status==='playing'&&me&&e.ply===g.st.ply){ g.status='over'; g.st.over=true; g.st.result=`${me===1?'黒':'白'}の勝ち（投了）`; }
+    else if(e.type==='DRAW'&&g.status==='playing'&&me&&e.before===Chess.key(g.st)&&e.ply===g.st.ply){ if(!g.offers.includes(me)) g.offers.push(me); if(g.offers.length===2){ g.status='over'; g.st.over=true; g.st.result='引き分け（合意）'; } }
+  }
+  return g;
+ }
+ return {reduce,participant};
+})();
+
+/* App core - fixed for browser */
+const $=id=>document.getElementById(id);
+const isBrowser = !window.webxdc;
+if(isBrowser){
+  window.webxdc = {
+    selfAddr:'browser-'+Math.random().toString(36).slice(2,7),
+    selfName:'あなた',
+    sendUpdate: (u)=>{ setTimeout(()=>{ if(window._cb) window._cb(u); },30); },
+    setUpdateListener: (f)=>{ window._cb=f; return Promise.resolve(); }
+  };
+  const n=$('notice');
+  if(n) n.textContent='ブラウザでテスト中：Delta Chat内で開くと相手と同期します。';
+}
+const addr=webxdc.selfAddr, name=webxdc.selfName||'プレイヤー';
+let view='menu',mySide=1,local=Chess.initial(),online=null,events=new Map(),clock=0,selected=null,legal=[],pending=null,received=0,lastRx='',ready=false,cpuTimer=null,armed=false,armTimer=null,logs=[],pendingPromo=null;
+let pendingUpdate=null, pendingTimer=null, retryReady=false;
+/* Locally synthesized audio: no downloads or network access required. */
+const Sound=(()=>{
+  let enabled=true, context=null;
+  try{enabled=localStorage.getItem('modern-chess-sound')!=='off';}catch(_){}
+  function refresh(){const b=$('soundToggle');if(b){b.textContent='効果音：'+(enabled?'オン':'オフ');b.setAttribute('aria-pressed',String(enabled));}}
+  function unlock(){
+    if(!enabled) return;
+    try{
+      const Audio=window.AudioContext||window.webkitAudioContext;
+      if(!Audio) return;
+      if(!context) context=new Audio();
+      if(context.state==='suspended') Promise.resolve(context.resume()).catch(()=>{});
+    }catch(_){}
+  }
+  function play(move){
+    if(!enabled||!move||document.hidden||!context||context.state!=='running') return;
+    try{
+      const capture=!!(move.captured||move.ep), start=context.currentTime;
+      const notes=capture?[[440,0,.09],[660,.065,.13]]:[[720,0,.075]];
+      for(const [frequency,offset,duration] of notes){
+        const oscillator=context.createOscillator(), gain=context.createGain();
+        const t=start+offset;
+        oscillator.type='sine';oscillator.frequency.setValueAtTime(frequency,t);
+        oscillator.frequency.exponentialRampToValueAtTime(frequency*.72,t+duration);
+        gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.12,t+.005);
+        gain.gain.exponentialRampToValueAtTime(.001,t+duration);
+        oscillator.connect(gain);gain.connect(context.destination);
+        oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};
+        oscillator.start(t);oscillator.stop(t+duration+.01);
+      }
+    }catch(_){}
+  }
+  function toggle(){enabled=!enabled;try{localStorage.setItem('modern-chess-sound',enabled?'on':'off');}catch(_){}refresh();if(enabled)unlock();}
+  return {unlock,play,toggle,refresh};
+})();
+const label=p=>p===1?'白':'黒';
+const id=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12);
+function state(){return view==='cpu'?local:online?.st||Chess.initial();}
+function me(){return view==='cpu'?mySide:Sync.participant(online,addr);}
+function active(){
+  if(view==='cpu') return !state().over && state().turn===me();
+  return ready&&!pending&&!state().over&&online?.status==='playing'&&state().turn===me();
+}
+const pieceNames={K:'キング',Q:'クイーン',R:'ルーク',B:'ビショップ',N:'ナイト',P:'ポーン'};
+const pieceShapes={"K":"<path d=\"M32 7v14m-6-8h12\" fill=\"none\"/><path d=\"M21 25c-8-8-15 1-8 10l9 10h20l9-10c7-9 0-18-8-10-3-10-19-10-22 0Z\"/><path d=\"M23 43h18l3 10H20Z\"/>","Q":"<path d=\"m12 25 8 20h24l8-20-13 9-7-15-7 15Z\"/><circle cx=\"11\" cy=\"21\" r=\"4\"/><circle cx=\"32\" cy=\"14\" r=\"4\"/><circle cx=\"53\" cy=\"21\" r=\"4\"/><path d=\"M22 45h20l3 8H19Z\"/>","R":"<path d=\"M17 12h8v8h7v-8h7v8h8v-8h5v16l-9 5 2 20H19l2-20-9-5V12Z\"/><path d=\"M21 30h22M22 45h20\" fill=\"none\"/>","B":"<path d=\"M32 10c-6 8-15 13-15 22 0 7 6 11 15 11s15-4 15-11c0-9-9-14-15-22Z\"/><path d=\"m36 20-8 12\" fill=\"none\"/><path d=\"M25 43h14l5 10H20Z\"/><circle cx=\"32\" cy=\"8\" r=\"3\"/>","N":"<path d=\"m22 14 3-7 9 6c15 2 18 18 14 30l-4 10H19l4-15 9-10-11 7-10-6 6-13Z\"/><path d=\"m25 16-8 8m16 7-6 13\" fill=\"none\"/><circle cx=\"31\" cy=\"20\" r=\"2\" fill=\"var(--detail)\" stroke=\"none\"/>","P":"<circle cx=\"32\" cy=\"19\" r=\"10\"/><path d=\"M26 29h12l-1 10 7 14H20l7-14Z\"/>"};
+function pieceSymbol(t){return pieceNames[t]||'駒';}
+function pieceSVG(t){return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g fill="var(--piece-fill)" stroke="var(--piece-stroke)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">'+(pieceShapes[t]||'')+'<path d="M17 54h30l3 5H14Z"/></g></svg>';}
+function clearSel(){selected=null;legal=[];pendingPromo=null; const d=$('promoDialog'); if(d&&d.open) d.close();}
+function button(text,fn,cls=''){const b=document.createElement('button');b.textContent=text;b.className=cls;b.onclick=fn;$('actions').append(b);return b;}
+function send(type,extra={}){
+  if(!ready||pending) return;
+  const e={v:1,eid:id(),clock:clock+1,addr,name,type,id:online?.id||id(),...extra};
+  pending=e.eid; clearSel(); render();
+  try{ pendingUpdate={payload:e,summary:`チェス：${type==='NEW'?'対局募集':type==='RESIGN'?'投了':type==='MOVE'?`${online.st.ply+1}手目`:type==='REMATCH'?'再戦':type==='DRAW'?'ドロー提案':'更新'}`}; transmitPending(); }
+  catch(err){ clearTimeout(pendingTimer); pending=null; pendingUpdate=null; const nn=$('notice'); if(nn) nn.textContent='送信できませんでした。'; render(); }
+}
+function transmitPending(){
+  retryReady=false;
+  clearTimeout(pendingTimer);
+  webxdc.sendUpdate(pendingUpdate,'');
+  pendingTimer=setTimeout(()=>{ if(pending){ retryReady=true; render(); } },15000);
+}
+function host(side){ send('NEW',{id:id(),side}); }
+function doMove(m){
+  if(view==='cpu' && state().turn!==me()) return;
+  if(view!=='cpu' && !active()) return;
+  const s=state(); const n=Chess.play(s,m);
+  if(!n){ console.log('invalid move',m); return; }
+  clearSel();
+  if(view==='cpu'){
+    logs.push(notation(s,m));
+    local=n; Sound.play(n.last); render(); schedule();
+  }else send('MOVE',{move:m,before:Chess.key(s),ply:s.ply});
+}
+function notation(s,m){
+  try{
+    const files='abcdefgh'; const ranks='87654321';
+    if(m.castle) return m.castle==='K'?'O-O':'O-O-O';
+    let from=files[m.fc]+ranks[m.fr];
+    let to=files[m.c]+ranks[m.r];
+    let cap = (s.b && s.b[m.r] && s.b[m.r][m.c]) || m.ep ? 'x' : '-';
+    let promo = m.promote ? '='+m.promote : '';
+    return `${s.ply+1}. ${from}${cap}${to}${promo}`;
+  }catch(e){ return `${m.fr},${m.fc}->${m.r},${m.c}`; }
+}
+function clickSquare(r,c){
+  if(view==='cpu'){
+    if(state().over) return;
+    if(state().turn!==me()) return;
+  }else{
+    if(!active()) return;
+  }
+  const dests=legal.filter(m=>m.r===r&&m.c===c);
+  if(dests.length){
+    if(dests.length>1 && dests[0].promote){
+      pendingPromo=dests;
+      showPromo(dests);
+      return;
+    }
+    doMove(dests[0]);
+    return;
+  }
+  const q=state().b[r][c];
+  if(q?.p===me()){
+    if(selected?.r===r&&selected?.c===c){ clearSel(); }
+    else { selected={r,c}; try{ legal=Chess.moves(state()).filter(m=>m.fr===r&&m.fc===c); }catch(e){ console.error(e); legal=[]; } }
+    render();
+  }else{
+    if(selected){ clearSel(); render(); }
+  }
+}
+function showPromo(moves){
+  const grid=$('promoGrid'); if(!grid) return; grid.textContent='';
+  const s=state(); const p=s.turn;
+  for(let m of moves){
+    let b=document.createElement('button');
+    b.innerHTML=`<span class="piece ${p===1?'white':'black'}">${pieceSVG(m.promote)}</span>`;
+    b.title=pieceSymbol(m.promote); b.setAttribute('aria-label',pieceSymbol(m.promote)+'に昇格');
+    b.onclick=()=>{ const d=$('promoDialog'); if(d) d.close(); doMove(m); };
+    grid.append(b);
+  }
+  const dlg=$('promoDialog'); if(dlg) dlg.showModal();
+}
+function render(){
+  try{
+    const playing=view!=='menu';
+    const menu=$('menu'), game=$('game'), back=$('back'), mode=$('mode');
+    if(menu) menu.hidden=playing;
+    if(game) game.hidden=!playing;
+    if(back) back.hidden=!playing;
+    if(mode) mode.textContent= view==='cpu' ? 'CPU対戦' : view==='online' ? 'オンライン' : 'webxdc';
+    if(!playing) return;
+    const s=state(), mine=me(), flip=mine===2, bottom=flip?2:1, top=3-bottom;
+    const playerName=p=> view==='cpu' ? (p===mySide?'あなた':'CPU') : (online?.players[p]?.name||'募集中');
+    const files='abcdefgh';
+    const topLabel=$('topLabel'), bottomLabel=$('bottomLabel');
+    if(topLabel) topLabel.textContent=`${label(top)} ${playerName(top)}`;
+    if(bottomLabel) bottomLabel.textContent=`${label(bottom)} ${playerName(bottom)}${mine===bottom?'（あなた）':''}`;
+
+    let mat=0;
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++){let q=s.b[r][c]; if(q){let v=Chess.values[q.t]; mat+= q.p===1? v : -v;}}
+    const initialCounts={1:{K:1,Q:1,R:2,B:2,N:2,P:8},2:{K:1,Q:1,R:2,B:2,N:2,P:8}};
+    let cur={1:{},2:{}};
+    for(let p of [1,2]) for(let t of Chess.types) cur[p][t]=0;
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++){let q=s.b[r][c]; if(q) cur[q.p][q.t]=(cur[q.p][q.t]||0)+1;}
+    let topCaps=[], botCaps=[];
+    for(let t of ['Q','R','B','N','P']){
+      let diffTop = (initialCounts[top][t]||0) - (cur[top][t]||0);
+      let diffBot = (initialCounts[bottom][t]||0) - (cur[bottom][t]||0);
+      for(let i=0;i<diffTop;i++) botCaps.push(t);
+      for(let i=0;i<diffBot;i++) topCaps.push(t);
+    }
+    const topCapt=$('topCapt'), bottomCapt=$('bottomCapt'), topMat=$('topMat'), bottomMat=$('bottomMat');
+    if(topCapt){ topCapt.textContent=''; topCaps.forEach(t=>{let el=document.createElement('span'); el.innerHTML=pieceSVG(t); el.className='piece '+(bottom===1?'white':'black'); el.style.fontSize='16px'; topCapt.append(el);}); }
+    if(bottomCapt){ bottomCapt.textContent=''; botCaps.forEach(t=>{let el=document.createElement('span'); el.innerHTML=pieceSVG(t); el.className='piece '+(top===1?'white':'black'); el.style.fontSize='16px'; bottomCapt.append(el);}); }
+    if(topMat) topMat.textContent = mat>0 ? `+${mat}` : mat<0? `${mat}` : '';
+    if(bottomMat) bottomMat.textContent = mat!==0 ? (bottom===1? (mat>0?`+${mat}`:`${mat}`) : (mat<0?`+${-mat}`:`${-mat}`)) : '';
+
+    const coordsX=$('coordsX');
+    if(coordsX){ coordsX.textContent=''; for(let i=0;i<8;i++){let span=document.createElement('span'); let idx=flip?7-i:i; span.textContent=files[idx]; coordsX.append(span);} }
+
+    const board=$('board');
+    if(board){
+      board.textContent='';
+      let checkPos=null;
+      if(Chess.inCheck(s,s.turn)){
+        for(let r=0;r<8;r++)for(let c=0;c<8;c++) if(s.b[r][c]?.t==='K'&&s.b[r][c]?.p===s.turn) checkPos=[r,c];
+      }
+      for(let y=0;y<8;y++)for(let x=0;x<8;x++){
+        const r=flip?7-y:y, c=flip?7-x:x;
+        const q=s.b[r][c];
+        const b=document.createElement('button');
+        const isLight=(r+c)%2===0;
+        b.className='cell '+(isLight?'light':'dark');
+        if(s.last && s.last.r===r && s.last.c===c) b.classList.add('last');
+        if(s.last && s.last.fr===r && s.last.fc===c) b.classList.add('last');
+        if(selected?.r===r && selected?.c===c) b.classList.add('sel');
+        if(checkPos && checkPos[0]===r && checkPos[1]===c) b.classList.add('in-check');
+        let isDest=legal.some(m=>m.r===r&&m.c===c);
+        if(isDest){ b.classList.add('dest'); if(q||legal.some(m=>m.r===r&&m.c===c&&m.ep)) b.classList.add('has-piece'); }
+        b.setAttribute('aria-label',`${files[c]}${8-r} ${q?label(q.p)+pieceSymbol(q.t):'空き'}`);
+        if(q){
+          const sp=document.createElement('span');
+          sp.className='piece '+(q.p===1?'white':'black') + (s.last && s.last.r===r && s.last.c===c ? ' moved' : '');
+          sp.innerHTML=pieceSVG(q.t);
+          b.append(sp);
+        }
+        b.onclick=()=>clickSquare(r,c);
+        board.append(b);
+      }
+    }
+
+    let statusTxt='';
+    if(s.over) statusTxt=s.result;
+    else {
+      statusTxt=`${label(s.turn)}の番 ${mine===s.turn?'（あなた）':mine?'（相手）':'（観戦）'}${Chess.inCheck(s,s.turn)?' — チェック！':''}`;
+    }
+    if(view==='online'&&!online) statusTxt='相手を募集しましょう';
+    if(online?.status==='waiting'&&view==='online') statusTxt= mine ? '相手の参加待ち' : `${playerName(online.hostSide)}さんが募集中`;
+    if(pending&&view==='online') statusTxt+=' ／ 送信待ち';
+    if(!ready && view!=='cpu') statusTxt='履歴を復元中…';
+    const statusText=$('statusText');
+    if(statusText) statusText.textContent=statusTxt;
+    const statusEl=$('status');
+    if(statusEl) statusEl.className='status '+(s.turn===1?'white-turn':'black-turn');
+
+    const hint=$('hint');
+    if(hint){
+      if(s.over) hint.textContent='対局終了です。メニューから再戦できます。';
+      else if(selected) hint.textContent=`${pieceSymbol(s.b[selected.r][selected.c]?.t||'?')} の行き先を選んでください。黒ドットが合法手です。`;
+      else hint.textContent='自分の駒を選ぶ → 黒ドットへ。キング2マスでキャスリング。';
+    }
+
+    const actions=$('actions');
+    if(actions){
+      actions.textContent='';
+      if(view==='cpu'){
+        if(s.over) button('もう一度（色を交代）',()=>startCpu(3-mySide),'primary');
+        else { button(armed?'本当に投了？':'投了',resign); button('引き分けにする',()=>{local.over=true; local.result='引き分け（練習終了）'; clearSel(); render();}); }
+        button('最初から',()=>startCpu(mySide));
+      }else if(!online){
+        button('白で募集',()=>host(1),'primary'); button('黒で募集',()=>host(2));
+      }else if(online.status==='waiting'){
+        if(mine) button('募集を取り消す',()=>send('CANCEL'));
+        else button('参加する',()=>send('JOIN'),'primary');
+      }else if(online.status==='over'){
+        if(mine) button('もう一度（色替えで再戦）',()=>send('REMATCH',{id:id(),previous:online.id}),'primary');
+        button('白で新しく募集',()=>host(1)); button('黒で新しく募集',()=>host(2));
+      }else if(mine){
+        button(armed?'本当に投了？':'投了',resign);
+        button(online.offers.includes(mine)?'ドロー提案済み':online.offers.length?'ドローに同意':'ドロー提案',()=>send('DRAW',{before:Chess.key(s),ply:s.ply}));
+      }
+      for(const b of actions.children) b.disabled=view!=='cpu'&&(!!pending||!ready);
+      if(view==='online'&&pending&&retryReady) button('反映を再確認・再送',()=>{
+        try{transmitPending();render();}catch(err){retryReady=true;$('notice').textContent='再送できませんでした。チャットの送信権限を確認してください。';}
+      });
+    }
+    const rx=$('rx');
+    if(rx) rx.textContent= view==='online' ? `通信：受信 ${received}件 ／ 最終 ${lastRx||'なし'}\n${pending?'反映待ちです。':'同じチャットの同じ投稿を開いてください。'}\nv1.0.4` : 'CPU戦は保存されません。ブラウザでも動作します。';
+    const log=$('log');
+    if(log) log.textContent = view==='cpu' ? logs.join('\n') : `${s.ply}手まで。最終手：${s.last?notation(s,s.last):'なし'}\n`;
+  }catch(e){
+    console.error(e);
+    const nn=$('notice');
+    if(nn) nn.textContent='エラー: '+e.message;
+  }
+}
+function resign(){
+  if(!armed){ armed=true; render(); clearTimeout(armTimer); armTimer=setTimeout(()=>{armed=false; render();},3000); return; }
+  armed=false; clearTimeout(armTimer);
+  if(view==='cpu'){ local.over=true; local.result='CPUの勝ち（投了）'; clearSel(); render(); }
+  else send('RESIGN',{ply:state().ply});
+}
+function schedule(){
+  clearTimeout(cpuTimer);
+  if(view==='cpu'&&!local.over&&local.turn!==mySide){
+    cpuTimer=setTimeout(()=>{
+      try{
+        const m=Chess.cpu(local);
+        if(view!=='cpu'||local.over||local.turn===mySide) return;
+        if(m){ logs.push(notation(local,m)); local=Chess.play(local,m); Sound.play(local.last); }
+        clearSel(); render();
+      }catch(e){ console.error('cpu error',e); const nn=$('notice'); if(nn) nn.textContent='CPUエラー: '+e.message; }
+    }, 300);
+  }
+}
+function startCpu(side){
+  console.log('startCpu',side);
+  clearTimeout(cpuTimer);
+  mySide=side; view='cpu'; local=Chess.initial(); logs=[]; armed=false;
+  clearSel(); render(); schedule();
+  const notice=$('notice'); if(notice) notice.textContent='CPU対戦開始：'+(side===1?'あなたが白':'あなたが黒');
+}
+
+document.addEventListener('pointerdown',Sound.unlock,{capture:true});
+document.addEventListener('keydown',Sound.unlock,{capture:true});
+document.addEventListener('DOMContentLoaded', ()=>{
+  Sound.refresh(); $('soundToggle').onclick=Sound.toggle;
+  const cw=$('cpuWhite'), cb=$('cpuBlack'), ob=$('onlineBtn'), back=$('back'), cancel=$('cancelPromo');
+  if(cw) cw.onclick=()=>startCpu(1);
+  if(cb) cb.onclick=()=>startCpu(2);
+  if(ob) ob.onclick=()=>{ clearTimeout(cpuTimer); view='online'; armed=false; clearSel(); render(); };
+  if(back) back.onclick=()=>{ clearTimeout(cpuTimer); view='menu'; clearSel(); render(); const nn=$('notice'); if(nn) nn.textContent=''; };
+  if(cancel) cancel.onclick=()=>{ clearSel(); render(); };
+  render();
+});
+
+Promise.resolve().then(()=>{
+  if(window.webxdc && webxdc.setUpdateListener){
+    return webxdc.setUpdateListener(u=>{
+      received++; lastRx=new Date().toLocaleTimeString('ja-JP');
+      const e=u.payload; if(!e||e.v!==1||!Number.isSafeInteger(e.clock)||typeof e.eid!=='string'||typeof e.addr!=='string') return;
+      if(!events.has(e.eid)){ events.set(e.eid,e); clock=Math.max(clock,e.clock); const previous=online; online=Sync.reduce(events.values());
+        if(ready&&view==='online'&&previous&&online&&previous.id===online.id&&online.st.ply===previous.st.ply+1) Sound.play(online.st.last); if(view==='online'){ armed=false; clearSel(); } }
+      if(pending===e.eid){ pending=null;pendingUpdate=null;retryReady=false;clearTimeout(pendingTimer); }
+      render();
+    },0).then(()=>{ ready=true; render(); }).catch(()=>{ const nn=$('notice'); if(nn) nn.textContent='履歴を読み込めません。'; });
+  }else{
+    ready=true; render();
+  }
+});
+</script>
+</body></html>
